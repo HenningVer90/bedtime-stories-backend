@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #4F46E5;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #4338CA;
+        }
+        #result {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .loading {
+            color: #4F46E5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Bedtime Stories API</h1>
+    
+    <button onclick="testHealth()">✅ Test Health Check</button>
+    <button onclick="testStory()">📚 Test Story Generation</button>
+    
+    <div id="result">Click a button to test the API...</div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+
+        async function testHealth() {
+            const result = document.getElementById('result');
+            result.className = 'loading';
+            result.textContent = '⏳ Testing health check...';
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                result.className = '';
+                result.textContent = '✅ SUCCESS!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.className = '';
+                result.textContent = '❌ ERROR: ' + error.message;
+            }
+        }
+
+        async function testStory() {
+            const result = document.getElementById('result');
+            result.className = 'loading';
+            result.textContent = '⏳ Generating story... (this may take 10-30 seconds)\n\nPlease wait...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/generate-story`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Write a 2-sentence bedtime story about a sleepy bunny in Afrikaans'
+                    })
+                });
+                
+                const data = await response.json();
+                result.className = '';
+                
+                if (data.success) {
+                    result.textContent = '✅ SUCCESS! Story generated!\n\n' + 
+                                       'STORY:\n' + data.story + '\n\n' +
+                                       'METADATA:\n' + JSON.stringify(data.metadata, null, 2);
+                } else {
+                    result.textContent = '❌ FAILED:\n\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.className = '';
+                result.textContent = '❌ ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
