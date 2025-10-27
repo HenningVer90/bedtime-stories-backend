@@ -132,11 +132,18 @@ app.listen(PORT, () => {
   console.log('🚀 ================================');
   
   // Check if API key is configured
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not configured!');
-  } else {
-    console.log('✅ Anthropic API key configured');
-  }
+  // Debug: Log all environment variables
+console.log('🔍 DEBUG: All environment variables:');
+console.log('ANTHROPIC_API_KEY exists?', !!process.env.ANTHROPIC_API_KEY);
+console.log('ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length);
+console.log('First 20 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 20));
+console.log('All env keys:', Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')));
+
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not configured!');
+} else {
+  console.log('✅ Anthropic API key configured');
+}
 });
 
 // Handle graceful shutdown
