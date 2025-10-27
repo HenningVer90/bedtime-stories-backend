@@ -17,7 +17,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY,
 });
 
 // Root endpoint
