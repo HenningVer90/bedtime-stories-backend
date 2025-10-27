@@ -76,3 +76,6 @@ Deployed on Railway.app
 ## License
 
 MIT
+
+---
+Last updated: October 27, 2025
