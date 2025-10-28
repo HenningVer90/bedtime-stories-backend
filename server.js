@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins for now, restrict later
+  origin: '*',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
@@ -86,48 +86,34 @@ app.post('/api/generate-story', async (req, res) => {
       });
     }
 
-    if (prompt.length > 5000) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Prompt is too long' 
-      });
-    }
-
     console.log('📖 Generating story...');
-    console.log('Prompt length:', prompt.length, 'characters');
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
-      temperature: 1,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
+      messages: [{ role: 'user', content: prompt }]
     });
 
     const storyText = message.content[0].text;
-    console.log('✅ Story generated successfully');
+    console.log('✅ Story generated');
 
-    // Generate images if requested
     let images = null;
     if (generateImages && process.env.OPENAI_API_KEY) {
       console.log('🎨 Generating images...');
       const parts = splitStoryIntoParts(storyText);
       
-      const [img1, img2, img3] = await Promise.all([
-        generateImage(parts.beginning, 'beginning'),
-        generateImage(parts.middle, 'middle'),
-        generateImage(parts.end, 'ending')
-      ]);
+      try {
+        const [img1, img2, img3] = await Promise.all([
+          generateImage(parts.beginning, 'beginning'),
+          generateImage(parts.middle, 'middle'),  
+          generateImage(parts.end, 'ending')
+        ]);
 
-      images = {
-        beginning: img1,
-        middle: img2,
-        end: img3
-      };
-      
-      console.log('✅ Images generated');
+        images = { beginning: img1, middle: img2, end: img3 };
+        console.log('✅ Images generated');
+      } catch (imgError) {
+        console.log('⚠️ Image generation failed, continuing without images');
+      }
     }
 
     res.json({ 
@@ -143,95 +129,9 @@ app.post('/api/generate-story', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error:', error.message);
-    
-    if (error.status === 401) {
-      return res.status(500).json({ 
-        success: false,
-        error: 'API authentication failed.' 
-      });
-    }
-
-    if (error.status === 429) {
-      return res.status(429).json({ 
-        success: false,
-        error: 'Rate limit exceeded. Please try again later.' 
-      });
-    }
-
     res.status(500).json({ 
       success: false,
-      error: 'Failed to generate story. Please try again.'
-    });
-  }
-});
-  try {
-    const { prompt } = req.body;
-
-    // Validation
-    if (!prompt) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Prompt is required' 
-      });
-    }
-
-    if (prompt.length > 5000) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Prompt is too long' 
-      });
-    }
-
-    console.log('📖 Generating story...');
-    console.log('Prompt length:', prompt.length, 'characters');
-
-    // Generate story using Anthropic API
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      temperature: 1,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
-
-    const storyText = message.content[0].text;
-
-    console.log('✅ Story generated successfully');
-    console.log('Story length:', storyText.length, 'characters');
-
-    res.json({ 
-      success: true,
-      story: storyText,
-      metadata: {
-        model: 'claude-sonnet-4-20250514',
-        tokens: message.usage?.output_tokens || 0
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error generating story:', error.message);
-    
-    // Handle specific Anthropic API errors
-    if (error.status === 401) {
-      return res.status(500).json({ 
-        success: false,
-        error: 'API authentication failed. Please check configuration.' 
-      });
-    }
-
-    if (error.status === 429) {
-      return res.status(429).json({ 
-        success: false,
-        error: 'Rate limit exceeded. Please try again later.' 
-      });
-    }
-
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to generate story. Please try again.',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to generate story.'
     });
   }
 });
@@ -252,19 +152,11 @@ app.listen(PORT, () => {
   console.log(`🔗 Local: http://localhost:${PORT}`);
   console.log('🚀 ================================');
   
-  // Check if API key is configured
-  // Debug: Log all environment variables
-console.log('🔍 DEBUG: All environment variables:');
-console.log('ANTHROPIC_API_KEY exists?', !!process.env.ANTHROPIC_API_KEY);
-console.log('ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length);
-console.log('First 20 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 20));
-console.log('All env keys:', Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')));
-
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not configured!');
-} else {
-  console.log('✅ Anthropic API key configured');
-}
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not configured!');
+  } else {
+    console.log('✅ Anthropic API key configured');
+  }
 });
 
 // Handle graceful shutdown
