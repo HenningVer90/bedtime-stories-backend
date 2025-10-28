@@ -38,11 +38,21 @@ function splitStoryIntoParts(story) {
 }
 
 // Function to generate image
-async function generateImage(storyPart, style) {
+async function generateImage(storyPart, style, age) {
   try {
+    const styleGuide = {
+      beginning: 'warm and inviting scene, soft lighting, peaceful atmosphere',
+      middle: 'engaging and colorful, dynamic composition, cheerful mood',
+      ending: 'calm and dreamy, gentle colors, soothing nighttime scene'
+    };
+
+    const ageAppropriate = age <= 5 ? 'simple shapes, bold colors, very cute characters' :
+                           age <= 8 ? 'detailed but friendly, vibrant colors, expressive characters' :
+                           'rich details, beautiful composition, engaging storytelling';
+
     const response = await openai.images.generate({
       model: "dall-e-2",
-      prompt: `Children's storybook illustration, ${style} style, colorful and friendly: ${storyPart.substring(0, 200)}`,
+      prompt: `Professional children's storybook illustration for ${age}-year-old. ${styleGuide[style]}. ${ageAppropriate}. Whimsical, beautiful, high quality digital painting. Story: ${storyPart.substring(0, 150)}`,
       n: 1,
       size: "1024x1024",
     });
@@ -103,11 +113,12 @@ app.post('/api/generate-story', async (req, res) => {
       const parts = splitStoryIntoParts(storyText);
       
       try {
-        const [img1, img2, img3] = await Promise.all([
-          generateImage(parts.beginning, 'beginning'),
-          generateImage(parts.middle, 'middle'),  
-          generateImage(parts.end, 'ending')
-        ]);
+     const age = parseInt(req.body.age) || 5;
+const [img1, img2, img3] = await Promise.all([
+  generateImage(parts.beginning, 'beginning', age),
+  generateImage(parts.middle, 'middle', age),  
+  generateImage(parts.end, 'ending', age)
+]);
 
         images = { beginning: img1, middle: img2, end: img3 };
         console.log('✅ Images generated');
