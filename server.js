@@ -5,14 +5,31 @@ const Anthropic = require('@anthropic-ai/sdk');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
-// Middleware
+// Middleware - Updated CORS to allow all Vercel domains
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Vercel domains and localhost
+    const allowedOrigins = [
+      /\.vercel\.app$/,
+      /^http:\/\/localhost:\d+$/
+    ];
+    
+    if (allowedOrigins.some(pattern => pattern.test(origin))) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for development
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true
 }));
+
 app.use(express.json({ limit: '10mb' }));
 
 // Initialize Anthropic client
@@ -113,12 +130,12 @@ app.post('/api/generate-story', async (req, res) => {
       const parts = splitStoryIntoParts(storyText);
       
       try {
-     const age = parseInt(req.body.age) || 5;
-const [img1, img2, img3] = await Promise.all([
-  generateImage(parts.beginning, 'beginning', age),
-  generateImage(parts.middle, 'middle', age),  
-  generateImage(parts.end, 'ending', age)
-]);
+        const age = parseInt(req.body.age) || 5;
+        const [img1, img2, img3] = await Promise.all([
+          generateImage(parts.beginning, 'beginning', age),
+          generateImage(parts.middle, 'middle', age),  
+          generateImage(parts.end, 'ending', age)
+        ]);
 
         images = { beginning: img1, middle: img2, end: img3 };
         console.log('✅ Images generated');
